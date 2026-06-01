@@ -816,6 +816,69 @@ body.dark .dice-face .pip.on {
 /* 手机和平板：隐藏照片 */
 @media (max-width: 767px) {
   .photo-column { display: none; }
+
+  /* 压缩标题间距 */
+  h1 { font-size: 1.1rem; margin-bottom: 6px; }
+
+  /* 控制区紧凑排列 */
+  .controls {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .player-info {
+    padding: 4px 8px;
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .player-name { font-size: 0.75rem; }
+
+  .piece-indicator { width: 10px; height: 10px; }
+
+  .reset-btn {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+  }
+
+  /* 骰子区缩小 */
+  .dice-area { width: 54px; height: 54px; }
+  .dice { width: 44px; height: 44px; perspective: 140px; }
+  .dice-cube { transition: transform 0.3s ease-out; }
+  .dice-face { border-width: 1px; border-radius: 6px; padding: 5px; gap: 1px; }
+  .dice-face .pip { width: 9px; height: 9px; }
+  .face-1 { transform: rotateX(-90deg) translateZ(22px); }
+  .face-2 { transform: translateZ(22px); }
+  .face-3 { transform: rotateY(-90deg) translateZ(22px); }
+  .face-4 { transform: rotateY(90deg) translateZ(22px); }
+  .face-5 { transform: rotateY(180deg) translateZ(22px); }
+  .face-6 { transform: rotateX(90deg) translateZ(22px); }
+
+  /* 工具栏水平滚动 */
+  .toolbar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 4px 0;
+    margin-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+
+  .tool-btn {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* 消息区缩小 */
+  .message {
+    font-size: 0.8rem;
+    padding: 4px;
+    min-height: 20px;
+  }
 }
 
 /* 平板 */
