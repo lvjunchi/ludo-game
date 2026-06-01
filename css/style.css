@@ -451,8 +451,8 @@ body.dark .game-board {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  display: inline-block;
-  font-size: 1.5em;
+  display: inline;
+  font-size: inherit;
 }
 
 /* 骰子区域 */
