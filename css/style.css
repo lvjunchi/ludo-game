@@ -853,76 +853,78 @@ body.dark .dice-face .pip.on {
   .photo-column { display: none; }
 
   /* 页面顶部留白 */
-  body { padding: 16px 10px 10px; align-items: flex-start; }
+  body { padding: 80px 12px 10px; align-items: flex-start; }
 
   .game-container { margin-top: 0; }
 
-  /* 棋盘上方留空，不紧贴顶部 */
-  .photo-board-wrapper { margin-top: 6px; margin-bottom: 8px; }
+  /* 棋盘上方留空 */
+  .photo-board-wrapper { margin-top: 15px; margin-bottom: 12px; }
 
-  /* 标题居中且紧凑 */
-  h1 { font-size: 1.1rem; margin-bottom: 8px; letter-spacing: 1px; }
+  /* 标题 */
+  h1 { font-size: 1.3rem; margin-bottom: 6px; letter-spacing: 1px; }
 
-  /* 控制区缩小间距 */
+  /* === 控制区分两行 === */
   .controls {
-    gap: 6px;
-    margin-bottom: 6px;
-    margin-top: 2px;
+    gap: 10px;
+    margin: 6px 0;
+    justify-content: center;
   }
 
+  /* 第一行：玩家 + 骰子 + 玩家 */
   .player-info {
-    padding: 3px 6px;
+    padding: 6px 12px;
     flex-direction: row;
-    gap: 3px;
+    gap: 6px;
   }
 
-  .player-name { font-size: 0.7rem; }
+  .player-name { font-size: 0.85rem; }
 
-  .piece-indicator { width: 8px; height: 8px; }
+  .piece-indicator { width: 12px; height: 12px; }
 
-  .reset-btn {
-    padding: 3px 8px;
-    font-size: 0.65rem;
-  }
-
-  /* 骰子区缩小 */
-  .dice-area { width: 50px; height: 50px; }
-  .dice { width: 40px; height: 40px; perspective: 130px; }
+  /* 骰子恢复正常大小 */
+  .dice-area { width: 64px; height: 64px; }
+  .dice { width: 50px; height: 50px; perspective: 160px; }
   .dice-cube { transition: transform 0.3s ease-out; }
-  .dice-face { border-width: 1px; border-radius: 5px; padding: 4px; gap: 1px; }
-  .dice-face .pip { width: 8px; height: 8px; }
-  .face-1 { transform: rotateX(-90deg) translateZ(20px); }
-  .face-2 { transform: translateZ(20px); }
-  .face-3 { transform: rotateY(-90deg) translateZ(20px); }
-  .face-4 { transform: rotateY(90deg) translateZ(20px); }
-  .face-5 { transform: rotateY(180deg) translateZ(20px); }
-  .face-6 { transform: rotateX(90deg) translateZ(20px); }
+  .dice-face { border-width: 2px; border-radius: 8px; padding: 6px; gap: 2px; }
+  .dice-face .pip { width: 10px; height: 10px; }
+  .face-1 { transform: rotateX(-90deg) translateZ(25px); }
+  .face-2 { transform: translateZ(25px); }
+  .face-3 { transform: rotateY(-90deg) translateZ(25px); }
+  .face-4 { transform: rotateY(90deg) translateZ(25px); }
+  .face-5 { transform: rotateY(180deg) translateZ(25px); }
+  .face-6 { transform: rotateX(90deg) translateZ(25px); }
 
-  /* 工具栏水平滚动 */
+  /* 第二行：重置按钮独占一行 */
+  .reset-btn {
+    flex-basis: 100%;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    max-width: 160px;
+    margin: 0 auto;
+  }
+
+  /* 工具栏分两行，每行3个按钮 */
   .toolbar {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    gap: 5px;
-    padding: 4px 0;
-    margin-bottom: 4px;
-    margin-top: 2px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .toolbar::-webkit-scrollbar { display: none; }
-
-  .tool-btn {
-    padding: 3px 8px;
-    font-size: 0.65rem;
-    white-space: nowrap;
-    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 0;
+    margin: 8px 0 4px;
   }
 
-  /* 消息区缩小 */
+  .toolbar .tool-btn {
+    flex: 0 0 calc(33.33% - 6px);
+    padding: 8px 4px;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  /* 消息区 */
   .message {
-    font-size: 0.75rem;
-    padding: 3px;
-    min-height: 18px;
+    font-size: 0.85rem;
+    padding: 6px;
+    min-height: 22px;
   }
 }
 
