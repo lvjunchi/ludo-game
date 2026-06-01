@@ -852,67 +852,77 @@ body.dark .dice-face .pip.on {
 @media (max-width: 767px) {
   .photo-column { display: none; }
 
-  /* 压缩标题间距 */
-  h1 { font-size: 1.1rem; margin-bottom: 6px; }
+  /* 页面顶部留白 */
+  body { padding: 16px 10px 10px; align-items: flex-start; }
 
-  /* 控制区紧凑排列 */
+  .game-container { margin-top: 0; }
+
+  /* 棋盘上方留空，不紧贴顶部 */
+  .photo-board-wrapper { margin-top: 6px; margin-bottom: 8px; }
+
+  /* 标题居中且紧凑 */
+  h1 { font-size: 1.1rem; margin-bottom: 8px; letter-spacing: 1px; }
+
+  /* 控制区缩小间距 */
   .controls {
     gap: 6px;
     margin-bottom: 6px;
+    margin-top: 2px;
   }
 
   .player-info {
-    padding: 4px 8px;
+    padding: 3px 6px;
     flex-direction: row;
-    gap: 4px;
+    gap: 3px;
   }
 
-  .player-name { font-size: 0.75rem; }
+  .player-name { font-size: 0.7rem; }
 
-  .piece-indicator { width: 10px; height: 10px; }
+  .piece-indicator { width: 8px; height: 8px; }
 
   .reset-btn {
-    padding: 4px 10px;
-    font-size: 0.7rem;
+    padding: 3px 8px;
+    font-size: 0.65rem;
   }
 
   /* 骰子区缩小 */
-  .dice-area { width: 54px; height: 54px; }
-  .dice { width: 44px; height: 44px; perspective: 140px; }
+  .dice-area { width: 50px; height: 50px; }
+  .dice { width: 40px; height: 40px; perspective: 130px; }
   .dice-cube { transition: transform 0.3s ease-out; }
-  .dice-face { border-width: 1px; border-radius: 6px; padding: 5px; gap: 1px; }
-  .dice-face .pip { width: 9px; height: 9px; }
-  .face-1 { transform: rotateX(-90deg) translateZ(22px); }
-  .face-2 { transform: translateZ(22px); }
-  .face-3 { transform: rotateY(-90deg) translateZ(22px); }
-  .face-4 { transform: rotateY(90deg) translateZ(22px); }
-  .face-5 { transform: rotateY(180deg) translateZ(22px); }
-  .face-6 { transform: rotateX(90deg) translateZ(22px); }
+  .dice-face { border-width: 1px; border-radius: 5px; padding: 4px; gap: 1px; }
+  .dice-face .pip { width: 8px; height: 8px; }
+  .face-1 { transform: rotateX(-90deg) translateZ(20px); }
+  .face-2 { transform: translateZ(20px); }
+  .face-3 { transform: rotateY(-90deg) translateZ(20px); }
+  .face-4 { transform: rotateY(90deg) translateZ(20px); }
+  .face-5 { transform: rotateY(180deg) translateZ(20px); }
+  .face-6 { transform: rotateX(90deg) translateZ(20px); }
 
   /* 工具栏水平滚动 */
   .toolbar {
     overflow-x: auto;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 5px;
     padding: 4px 0;
     margin-bottom: 4px;
+    margin-top: 2px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .toolbar::-webkit-scrollbar { display: none; }
 
   .tool-btn {
-    padding: 4px 10px;
-    font-size: 0.7rem;
+    padding: 3px 8px;
+    font-size: 0.65rem;
     white-space: nowrap;
     flex-shrink: 0;
   }
 
   /* 消息区缩小 */
   .message {
-    font-size: 0.8rem;
-    padding: 4px;
-    min-height: 20px;
+    font-size: 0.75rem;
+    padding: 3px;
+    min-height: 18px;
   }
 }
 
