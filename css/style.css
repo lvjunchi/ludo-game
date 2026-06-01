@@ -594,6 +594,41 @@ body.dark .dice-face .pip.on {
   z-index: 9997;
 }
 
+/* 输家安慰信息 */
+.consolation-msg {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  padding: 6px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 输家安慰 emoji（从底部升起） */
+.consolation-cele {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9996;
+  overflow: hidden;
+}
+
+.consolation-cele span {
+  position: absolute;
+  bottom: -40px;
+  animation: consFloatUp linear forwards;
+}
+
+@keyframes consFloatUp {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  20% { opacity: 0.6; }
+  100% { transform: translateY(-110vh) scale(1); opacity: 0; }
+}
+
 /* 事件编辑器 */
 .editor-overlay {
   display: none;

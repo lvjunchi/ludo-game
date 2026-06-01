@@ -21,6 +21,7 @@ let gameState;
 let currentGeneration = 0;
 let isAnimating = false;
 let cellPosCache = null;
+let boardLocked = false;
 
 // ============ 默认事件 ============
 
@@ -161,6 +162,46 @@ function playSound(type) {
   } catch (e) {}
 }
 
+// 骰子滚动嘀嗒声 — 噪声+带通滤波模拟塑料碰撞声
+let tickInterval = null;
+
+function playDiceTick() {
+  try {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    const bufferSize = audioCtx.sampleRate * 0.035;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let j = 0; j < bufferSize; j++) {
+      data[j] = (Math.random() * 2 - 1) * Math.exp(-j / (bufferSize * 0.2));
+    }
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 1500 + Math.random() * 2000;
+    filter.Q.value = 2;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.06;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+  } catch (e) {}
+}
+
+function startDiceTicks(count) {
+  let i = 0;
+  tickInterval = setInterval(() => {
+    if (i >= count) { clearInterval(tickInterval); tickInterval = null; return; }
+    playDiceTick();
+    i++;
+  }, 85);
+}
+
+function stopDiceTicks() {
+  if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+}
+
 // ============ 触觉反馈 ============
 
 function vibrate(pattern) {
@@ -201,6 +242,11 @@ function toggleTheme() {
   const theme = localStorage.getItem("ludo_theme") || "light";
   const next = theme === "light" ? "dark" : theme === "dark" ? "lumu" : "light";
   applyTheme(next);
+  if (gameState) {
+    initBoard();
+    initDice();
+    if (gameState.diceValue) renderDice(gameState.diceValue);
+  }
   vibrate(30);
 }
 
@@ -342,6 +388,8 @@ function newGameState() {
 // ============ 棋盘 ============
 
 function initBoard() {
+  boardLocked = true;
+  setTimeout(() => { boardLocked = false; }, 2000);
   const board = document.getElementById("gameBoard");
   board.innerHTML = "";
   cellPosCache = null;
@@ -534,7 +582,7 @@ function initDice() {
 }
 
 function rollDice() {
-  if (gameState.isRolling || gameState.gameOver || isAnimating) return;
+  if (gameState.isRolling || gameState.gameOver || isAnimating || boardLocked) return;
   gameState.isRolling = true;
   const gen = currentGeneration;
   const cube = document.getElementById("diceCube");
@@ -546,9 +594,10 @@ function rollDice() {
 
   // 纯JS 3D旋转动画 — 快速随机旋转，最后平稳停到目标面
   cube.style.transition = "none";
+  startDiceTicks(10);
   let count = 0;
   const spinInterval = setInterval(() => {
-    if (gen !== currentGeneration) { clearInterval(spinInterval); return; }
+    if (gen !== currentGeneration) { clearInterval(spinInterval); stopDiceTicks(); return; }
     count++;
     if (count <= 10) {
       const rx = Math.floor(Math.random() * 720);
@@ -557,6 +606,7 @@ function rollDice() {
     }
     if (count > 10) {
       clearInterval(spinInterval);
+      stopDiceTicks();
       cube.style.transition = "transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1)";
       renderDice(gameState.diceValue);
       showMessage(`掷出了 ${gameState.diceValue} 点！`);
@@ -645,12 +695,22 @@ function afterMove(playerId, pos, eventText, gen) {
 
 function showWin(name) {
   // 更新统计
-  const winnerId = Object.entries(gameState.players).find(([, p]) => p.name === name)?.[0];
-  if (winnerId) updateStats(parseInt(winnerId));
+  const winnerEntry = Object.entries(gameState.players).find(([, p]) => p.name === name);
+  const winnerId = winnerEntry ? parseInt(winnerEntry[0]) : 1;
+  if (winnerId) updateStats(winnerId);
+  const loserId = winnerId === 1 ? 2 : 1;
+  const loserName = gameState.players[loserId]?.name || "对方";
 
   playSound("win");
   vibrate([100, 50, 100, 50, 200]);
   showMessage(`恭喜！${name} 走完一圈，获胜了！🎉`);
+
+  // 安慰弹幕 — 在棋盘上方显示一条安慰信息
+  const consMsg = document.createElement("div");
+  consMsg.className = "consolation-msg";
+  consMsg.textContent = `😢 ${loserName} 别灰心，下次加油！💪`;
+  document.querySelector(".game-board")?.after(consMsg);
+  setTimeout(() => consMsg.remove(), 4000);
 
   // 胜利弹窗
   const overlay = document.createElement("div");
@@ -661,13 +721,13 @@ function showWin(name) {
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 
-  // 旧版emoji庆祝保留
+  // 赢家 emoji 庆祝（礼花、爱心）
   const cele = document.createElement("div");
   cele.className = "celebration";
-  const emojis = ["🎉", "🎊", "❤️", "💕", "⭐", "🌹", "✨"];
-  for (let i = 0; i < 20; i++) {
+  const winEmojis = ["🎉", "🎊", "❤️", "💕", "⭐", "🌹", "✨", "🏆", "🥇"];
+  for (let i = 0; i < 24; i++) {
     const span = document.createElement("span");
-    span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    span.textContent = winEmojis[Math.floor(Math.random() * winEmojis.length)];
     span.style.left = Math.random() * 100 + "%";
     span.style.animationDelay = Math.random() * 2 + "s";
     span.style.animationDuration = (1.5 + Math.random() * 2) + "s";
@@ -675,6 +735,22 @@ function showWin(name) {
   }
   document.body.appendChild(cele);
   setTimeout(() => cele.remove(), 5000);
+
+  // 输家安慰 emoji（从底部升起拥抱/爱心）
+  const consCele = document.createElement("div");
+  consCele.className = "consolation-cele";
+  const consEmojis = ["🤗", "💪", "😊", "❤️", "🫂", "💗", "🌷", "☕"];
+  for (let i = 0; i < 12; i++) {
+    const span = document.createElement("span");
+    span.textContent = consEmojis[Math.floor(Math.random() * consEmojis.length)];
+    span.style.left = Math.random() * 100 + "%";
+    span.style.animationDelay = Math.random() * 2 + "s";
+    span.style.animationDuration = (3 + Math.random() * 2) + "s";
+    span.style.fontSize = (18 + Math.random() * 14) + "px";
+    consCele.appendChild(span);
+  }
+  document.body.appendChild(consCele);
+  setTimeout(() => consCele.remove(), 5000);
 
   // === Canvas 庆祝特效 ===
   const canvas = document.createElement("canvas");
@@ -807,6 +883,8 @@ function resetGame() {
   isAnimating = false;
   document.querySelector(".popup-overlay")?.remove();
   document.querySelector(".celebration")?.remove();
+  document.querySelector(".consolation-cele")?.remove();
+  document.querySelector(".consolation-msg")?.remove();
   document.querySelectorAll(".piece.moving").forEach(p => p.remove());
   gameState = newGameState();
   initBoard();
@@ -1136,4 +1214,20 @@ renderPhotos();
 document.getElementById("photoUrlInput").addEventListener("input", updatePhotoPreview);
 document.getElementById("photoFileInput").addEventListener("change", function(e) {
   if (e.target.files[0]) handlePhotoFile(e.target.files[0]);
+});
+
+// 键盘快捷键
+document.addEventListener("keydown", function(e) {
+  // 跳过弹窗可见时的按键
+  if (document.querySelector(".popup-overlay") || document.querySelector(".editor-overlay.show")) return;
+  if (e.key === " " || e.key === "Space") {
+    e.preventDefault();
+    rollDice();
+  }
+  if ((e.key === "r" || e.key === "R") && (e.ctrlKey || e.metaKey)) return;
+  if (e.key === "r" || e.key === "R") {
+    if (!gameState.gameOver && !gameState.isRolling && !isAnimating) {
+      resetGame();
+    }
+  }
 });
