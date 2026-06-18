@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-情侣飞行棋 — 一个双人浏览器游戏，纯 HTML + CSS + JavaScript 实现，无构建工具、无依赖。直接在浏览器中打开 `index.html` 即可游玩。
+情侣飞行棋 — 一个情侣互动空间，包含飞行棋等互动玩法。纯 HTML + CSS + JavaScript 实现，无构建工具、无依赖。直接在浏览器中打开 `index.html` 即可。
 
 ## 运行方式
 
@@ -13,11 +13,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 项目结构
 
 - `index.html` — 唯一的 HTML 入口，包含棋盘结构、控制区、工具栏、事件编辑器和照片编辑器弹窗。
-- `js/game.js` — 全部游戏逻辑（~660 行），通过 `onclick` 属性与 HTML 绑定。
+- `js/game.js` — 全部游戏逻辑和首页逻辑（~1549 行），通过 `onclick` 属性与 HTML 绑定。
+- `sw.js` — Service Worker（~30 行），cache-first 策略，缓存 `index.html`、`css/style.css`、`js/game.js`、`manifest.json`。
 - `css/style.css` — 所有样式，通过 CSS 自定义属性实现深/浅色主题切换。
-- `manifest.json` — PWA 清单，支持移动端"添加到主屏幕"，无 Service Worker。
+- `manifest.json` — PWA 清单，支持移动端"添加到主屏幕"。
 
 ## 架构核心
+
+### 页面结构
+
+应用采用单文件双页面架构，通过 `display` 切换实现页面跳转：
+
+- **首页** (`#homePage`) — 情侣互动空间入口，展示情侣信息、情话、统计、功能入口
+- **游戏页** (`.game-container`) — 飞行棋游戏界面，初始隐藏
+
+页面切换：`startGame()` 隐藏首页显示游戏页，`goHome()` 反之。游戏棋盘和骰子在首次进入游戏页时才初始化（`gameInitialized` 标志控制）。
+
+### 首页模块
+
+- **情侣信息区** — 头像（照片或 emoji）、昵称、爱心动画、恋爱天数（基于 `ludo_anniversary` 计算）
+- **今日心动** — 每日固定一句情话（`LOVE_QUOTES` 数组，基于日期取模）
+- **核心功能** — 开始游戏（主按钮）、回忆墙/成就/相册（Toast 提示"即将推出"）、设置
+- **统计区** — 总对局、双方胜场、情侣等级（6 级：初识→心动→热恋→甜蜜→深爱→永恒）
+- **底部文案** — 每日轮换温馨短句（`FOOTER_PHRASES`）
 
 ### 棋盘系统
 
@@ -68,12 +86,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `ludo_photos` | `{ "1": string, "2": string }` (JSON) | 玩家照片 URL 或 Data URL |
 | `ludo_stats` | `{ total, p1Wins, p2Wins }` (JSON) | 游戏统计 |
 | `ludo_bg_anim` | `"0"` / `"1"` | 动态背景开关 |
+| `ludo_players` | `{ "1": {name, icon}, "2": {name, icon} }` (JSON) | 玩家自定义名称和 emoji 图标 |
+| `ludo_anniversary` | `string` (YYYY-MM-DD) | 在一起的纪念日，用于计算恋爱天数 |
+| `ludo_achievements` | `{ unlocked: string[] }` (JSON) | 已解锁的成就 ID 列表 |
+| `ludo_win_streak` | `number` (string) | 当前连胜次数 |
+| `ludo_play_days` | `string[]` (JSON) | 游玩日期记录（YYYY-MM-DD），用于全勤奖检测 |
+
+### 键盘快捷键
+
+- `Space` — 摇骰子（等同点击骰子）
+- `R` — 重置游戏
+
+### 并发安全：generation 计数器
+
+`currentGeneration` 是核心并发控制机制。每次重置游戏时 `currentGeneration++`，所有 `setTimeout`/`setInterval` 回调在执行前检查捕获的 generation 值是否仍等于当前值，不匹配则跳过。这确保了重置后旧的动画和回调不会干扰新游戏状态。修改异步逻辑时必须沿用此模式。
 
 ### 音效与触觉
 
 - 音效通过 Web Audio API 振荡器生成（无外部音频文件）：`playSound("dice"|"move"|"event"|"win")`。
 - 触觉反馈通过 `navigator.vibrate(pattern)`。
 - 首次交互时创建 `AudioContext`（需用户手势触发）。
+
+### CSS 响应式断点
+
+- `>= 768px` — 桌面端，照片列可见，工具栏单行
+- `480px–767px` — 平板，照片列隐藏，工具栏两行
+- `< 480px` — 手机端，照片列隐藏，工具栏两行，3D 骰子缩小
 
 ### 事件编辑器
 

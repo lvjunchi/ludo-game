@@ -13,16 +13,50 @@
 </head>
 <body>
   <div class="bg-animation" id="bgAnimation"></div>
-  <div class="game-container">
+
+  <!-- 首页 -->
+  <div id="homePage" class="home-page">
+    <div class="home-couple-section">
+      <div class="home-avatars">
+        <div class="home-avatar" id="homeAvatar1" data-action="openPhoto1"></div>
+        <div class="home-heart-connector">❤️</div>
+        <div class="home-avatar" id="homeAvatar2" data-action="openPhoto2"></div>
+      </div>
+      <div class="home-names" id="homeNames"></div>
+      <div class="home-days" id="homeDays" data-action="openAnniversary"></div>
+    </div>
+
+    <div class="home-card home-quote-card">
+      <div class="home-quote" id="homeQuote"></div>
+    </div>
+
+    <div class="home-card home-play-card">
+      <button class="home-play-btn" data-action="startGame">🎮 开始游戏</button>
+    </div>
+
+    <div class="home-actions">
+      <button class="home-action-btn" data-action="openMemoryPage">📖 回忆墙</button>
+      <button class="home-action-btn" data-action="openAchievementPage">🏆 成就</button>
+      <button class="home-action-btn" data-action="openAlbum">📸 相册</button>
+      <button class="home-action-btn" data-action="openSettings">⚙️ 设置</button>
+    </div>
+
+    <div class="home-card home-stats-card" id="homeStats"></div>
+
+    <div class="home-footer" id="homeFooter"></div>
+  </div>
+
+  <!-- 游戏页 -->
+  <div class="game-container" style="display:none">
     <h1>情侣飞行棋</h1>
 
     <div class="photo-board-wrapper">
       <div class="photo-column">
-        <div class="photo-card" id="photo1" onclick="openPhotoEditor(1)">
+        <div class="photo-card" id="photo1" data-action="openPhoto1">
           <div class="photo-placeholder">🐺</div>
           <span class="photo-label">鹿角虫</span>
         </div>
-        <div class="photo-card" id="photo2" onclick="openPhotoEditor(2)">
+        <div class="photo-card" id="photo2" data-action="openPhoto2">
           <div class="photo-placeholder">🐷</div>
           <span class="photo-label">小曦曦</span>
         </div>
@@ -36,7 +70,7 @@
         <span class="piece-indicator"></span>
       </div>
 
-      <div class="dice-area" onclick="rollDice()">
+      <div class="dice-area" data-action="rollDice">
         <div class="dice" id="dice"></div>
       </div>
 
@@ -45,37 +79,38 @@
         <span class="piece-indicator"></span>
       </div>
 
-      <button class="reset-btn" onclick="resetGame()">重新开始</button>
+      <button class="reset-btn" data-action="resetGame">重新开始</button>
     </div>
 
     <div class="toolbar">
-      <button class="tool-btn" onclick="openEditor()">✏️ 事件</button>
-      <button class="tool-btn" onclick="openPlayerEditor()">🎮 玩家</button>
-      <button class="tool-btn" onclick="openStats()">📊 统计</button>
-      <button class="tool-btn" id="firstBtn" onclick="toggleFirst()">先手: 🐺</button>
-      <button class="tool-btn" id="themeBtn" onclick="toggleTheme()">☀️ 浅色</button>
-      <button class="tool-btn" id="bgBtn" onclick="toggleBgAnimation()">🌸 背景</button>
+      <button class="tool-btn" data-action="goHome">🏠 首页</button>
+      <button class="tool-btn" data-action="openEditor">✏️ 事件</button>
+      <button class="tool-btn" data-action="openPlayerEditor">🎮 玩家</button>
+      <button class="tool-btn" data-action="openStats">📊 统计</button>
+      <button class="tool-btn" id="firstBtn" data-action="toggleFirst">先手: 🐺</button>
+      <button class="tool-btn" id="themeBtn" data-action="toggleTheme">☀️ 浅色</button>
+      <button class="tool-btn" id="bgBtn" data-action="toggleBgAnimation">🌸 背景</button>
     </div>
 
     <div class="message" id="gameMessage">🐺 vs 🐷 点击骰子开始</div>
   </div>
 
   <!-- 事件编辑器弹窗 -->
-  <div class="editor-overlay" id="editorOverlay" onclick="closeEditor(event)">
+  <div class="editor-overlay" id="editorOverlay" data-action="closeEditor">
     <div class="editor-box">
       <h2>编辑格子事件</h2>
       <div class="preset-bar" id="presetBar"></div>
       <div class="editor-list" id="editorList"></div>
       <div class="editor-actions">
-        <button class="editor-btn save" onclick="saveEvents()">💾 保存</button>
-        <button class="editor-btn reset" onclick="resetEvents()">🔄 恢复默认</button>
-        <button class="editor-btn cancel" onclick="closeEditor()">取消</button>
+        <button class="editor-btn save" data-action="saveEvents">💾 保存</button>
+        <button class="editor-btn reset" data-action="resetEvents">🔄 恢复默认</button>
+        <button class="editor-btn cancel" data-action="closeEditor">取消</button>
       </div>
     </div>
   </div>
 
   <!-- 照片编辑器弹窗 -->
-  <div class="editor-overlay" id="photoEditorOverlay" onclick="closePhotoEditor(event)">
+  <div class="editor-overlay" id="photoEditorOverlay" data-action="closePhotoEditor">
     <div class="editor-box">
       <h2 id="photoEditorTitle">设置照片</h2>
       <div class="photo-editor-content">
@@ -85,15 +120,15 @@
         <input type="text" id="photoUrlInput" placeholder="或输入图片 URL" class="photo-url-input">
       </div>
       <div class="editor-actions">
-        <button class="editor-btn save" onclick="savePhoto()">💾 保存</button>
-        <button class="editor-btn reset" onclick="clearPhoto()">🔄 清除</button>
-        <button class="editor-btn cancel" onclick="closePhotoEditor()">取消</button>
+        <button class="editor-btn save" data-action="savePhoto">💾 保存</button>
+        <button class="editor-btn reset" data-action="clearPhoto">🔄 清除</button>
+        <button class="editor-btn cancel" data-action="closePhotoEditor">取消</button>
       </div>
     </div>
   </div>
 
   <!-- 玩家编辑器 -->
-  <div class="editor-overlay" id="playerEditorOverlay" onclick="closePlayerEditor(event)">
+  <div class="editor-overlay" id="playerEditorOverlay" data-action="closePlayerEditor">
     <div class="editor-box" style="max-width:380px">
       <h2>🎮 自定义玩家</h2>
       <div class="photo-editor-content" style="gap:16px">
@@ -109,28 +144,159 @@
         </div>
       </div>
       <div class="editor-actions">
-        <button class="editor-btn save" onclick="savePlayerEditor()">💾 保存</button>
-        <button class="editor-btn cancel" onclick="closePlayerEditor()">取消</button>
+        <button class="editor-btn save" data-action="savePlayerEditor">💾 保存</button>
+        <button class="editor-btn cancel" data-action="closePlayerEditor">取消</button>
       </div>
     </div>
   </div>
 
   <!-- 统计弹窗 -->
-  <div class="editor-overlay" id="statsOverlay" onclick="closeStats(event)">
+  <div class="editor-overlay" id="statsOverlay" data-action="closeStats">
     <div class="editor-box" style="max-width:360px">
       <h2>📊 游戏统计</h2>
       <div class="stats-content" id="statsContent"></div>
       <div class="editor-actions">
-        <button class="editor-btn reset" onclick="resetStats()">🔄 重置统计</button>
-        <button class="editor-btn cancel" onclick="closeStats()">关闭</button>
+        <button class="editor-btn reset" data-action="resetStats">🔄 重置统计</button>
+        <button class="editor-btn cancel" data-action="closeStats">关闭</button>
       </div>
     </div>
   </div>
 
+  <!-- 设置弹窗 -->
+  <div class="editor-overlay" id="settingsOverlay" data-action="closeSettings">
+    <div class="editor-box" style="max-width:400px">
+      <h2>⚙️ 设置</h2>
+      <div class="settings-content">
+        <div class="settings-section">
+          <span class="settings-label">🎮 玩家信息</span>
+          <button class="editor-btn save" data-action="openPlayerEditor">编辑</button>
+        </div>
+        <div class="settings-section">
+          <span class="settings-label">🎨 主题外观</span>
+          <button class="editor-btn save" id="settingsThemeBtn" data-action="toggleTheme">切换</button>
+        </div>
+        <div class="settings-section">
+          <span class="settings-label">🌸 背景动画</span>
+          <button class="editor-btn save" id="settingsBgBtn" data-action="toggleBgAnimation">开关</button>
+        </div>
+        <div class="settings-section">
+          <span class="settings-label">💕 纪念日</span>
+          <button class="editor-btn save" data-action="openAnniversary">设置</button>
+        </div>
+        <div class="settings-section">
+          <span class="settings-label">✏️ 格子事件</span>
+          <button class="editor-btn save" data-action="openEditor">编辑</button>
+        </div>
+        <div class="settings-section">
+          <span class="settings-label">📊 游戏统计</span>
+          <button class="editor-btn save" data-action="openStats">查看</button>
+        </div>
+      </div>
+      <div class="editor-actions">
+        <button class="editor-btn cancel" data-action="closeSettings">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 纪念日设置弹窗 -->
+  <div class="editor-overlay" id="anniversaryOverlay" data-action="closeAnniversary">
+    <div class="editor-box" style="max-width:340px">
+      <h2>💕 设置纪念日</h2>
+      <div class="photo-editor-content">
+        <p style="font-size:0.9rem;color:var(--cell-text);margin-bottom:8px">选择你们在一起的那一天</p>
+        <input type="date" id="anniversaryInput" class="photo-url-input">
+      </div>
+      <div class="editor-actions">
+        <button class="editor-btn save" data-action="saveAnniversary">💾 保存</button>
+        <button class="editor-btn cancel" data-action="closeAnniversary">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 相册页面 -->
+  <div id="albumPage" class="album-page" style="display:none">
+    <div class="album-header">
+      <button class="tool-btn" data-action="closeAlbum">← 返回</button>
+      <h2 class="album-title">📸 我们的相册</h2>
+      <label class="tool-btn album-add-btn" for="albumFileInput">+ 添加</label>
+      <input type="file" id="albumFileInput" accept="image/*" style="display:none">
+    </div>
+    <div class="album-grid" id="albumGrid"></div>
+  </div>
+
+  <!-- 照片查看器 -->
+  <div id="photoViewer" class="photo-viewer" style="display:none">
+    <div class="photo-viewer-overlay" data-action="closeViewer"></div>
+    <div class="photo-viewer-content">
+      <img id="viewerImage" src="">
+      <div class="viewer-caption" id="viewerCaption" data-action="editPhotoCaption"></div>
+      <div class="viewer-actions">
+        <button class="editor-btn save" data-action="editPhotoCaption">✏️ 编辑</button>
+        <button class="editor-btn reset" data-action="deleteAlbumPhoto">🗑️ 删除</button>
+        <button class="editor-btn cancel" data-action="closeViewer">✕ 关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 回忆墙页面 -->
+  <div id="memoryPage" class="memory-page" style="display:none">
+    <div class="memory-header">
+      <button class="tool-btn" data-action="closeMemory">← 返回</button>
+      <h2 class="memory-title">📖 我们的回忆</h2>
+      <button class="tool-btn" data-action="openMemoryEditor">+ 新建</button>
+    </div>
+    <div class="memory-timeline" id="memoryTimeline"></div>
+  </div>
+
+  <!-- 成就中心页面 -->
+  <div id="achievementPage" class="achievement-page" style="display:none">
+    <div class="achievement-header">
+      <button class="tool-btn" data-action="closeAchievement">← 返回</button>
+      <h2 class="achievement-title">🏆 成就中心</h2>
+      <div class="achievement-progress" id="achievementProgress"></div>
+    </div>
+    <div class="achievement-grid" id="achievementGrid"></div>
+  </div>
+
+  <!-- 成就解锁通知 -->
+  <div class="achievement-unlock-toast" id="achievementUnlockToast">
+    <div class="achievement-unlock-icon">🏆</div>
+    <div class="achievement-unlock-info">
+      <div class="achievement-unlock-label">成就解锁！</div>
+      <div class="achievement-unlock-name" id="achievementUnlockName"></div>
+    </div>
+  </div>
+
+  <!-- 回忆编辑弹窗 -->
+  <div class="editor-overlay" id="memoryEditorOverlay" data-action="closeMemoryEditor">
+    <div class="editor-box" style="max-width:400px">
+      <h2 id="memoryEditorTitle">新建回忆</h2>
+      <div class="photo-editor-content">
+        <input type="date" id="memoryDate" class="photo-url-input">
+        <input type="text" id="memoryTitle" class="photo-url-input" placeholder="标题" maxlength="20">
+        <textarea id="memoryContent" class="photo-url-input" placeholder="内容..." rows="4" style="resize:vertical"></textarea>
+      </div>
+      <div class="editor-actions">
+        <button class="editor-btn save" data-action="saveMemory">💾 保存</button>
+        <button class="editor-btn cancel" data-action="closeMemoryEditor">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/movement.js"></script>
+  <script src="js/dice.js"></script>
+  <script src="js/home.js"></script>
   <script src="js/game.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+      navigator.serviceWorker.register('sw.js').catch(() => {});
     }
   </script>
 </body>
