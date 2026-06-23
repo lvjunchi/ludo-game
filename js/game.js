@@ -209,23 +209,28 @@ function handleSaveAnniversary() {
 function handleOpenPhotoEditor(playerId) { openPhotoEditor(playerId); }
 
 // ---- 事件处理器映射 ----
+function closeSettingsIfOpen() {
+  var el = document.getElementById('settingsOverlay');
+  if (el && el.classList.contains('show')) el.classList.remove('show');
+}
+
 var actionHandlers = {
   'startGame': function() { handleStartGame(); },
   'goHome': function() { handleGoHome(); },
   'rollDice': function() { rollDice(); },
   'resetGame': function() { resetGame(); },
-  'openEditor': function() { openEditor(); },
+  'openEditor': function() { closeSettingsIfOpen(); openEditor(); },
   'closeEditor': function() {
     document.getElementById('editorOverlay').classList.remove('show');
   },
   'saveEvents': function() { saveEvents(); },
   'resetEvents': function() { resetEvents(); },
-  'openPlayerEditor': function() { openPlayerEditor(); },
+  'openPlayerEditor': function() { closeSettingsIfOpen(); openPlayerEditor(); },
   'closePlayerEditor': function() {
     document.getElementById('playerEditorOverlay').classList.remove('show');
   },
   'savePlayerEditor': function() { handleSavePlayerEditor(); },
-  'openStats': function() { openStats(playerData, gameStats); },
+  'openStats': function() { closeSettingsIfOpen(); openStats(playerData, gameStats); },
   'closeStats': function() {
     document.getElementById('statsOverlay').classList.remove('show');
   },
@@ -234,13 +239,13 @@ var actionHandlers = {
   'closeSettings': function() {
     document.getElementById('settingsOverlay').classList.remove('show');
   },
-  'openAnniversary': function() { openAnniversary(); },
+  'openAnniversary': function() { closeSettingsIfOpen(); openAnniversary(); },
   'closeAnniversary': function() {
     document.getElementById('anniversaryOverlay').classList.remove('show');
   },
   'saveAnniversary': function() { handleSaveAnniversary(); },
   'toggleFirst': function() { handleToggleFirst(); },
-  'toggleTheme': function() { handleToggleTheme(); },
+  'toggleTheme': function() { closeSettingsIfOpen(); handleToggleTheme(); },
   'toggleBgAnimation': function() { handleToggleBgAnimation(); },
   'openPhoto1': function() { handleOpenPhotoEditor(1); },
   'openPhoto2': function() { handleOpenPhotoEditor(2); },
@@ -250,14 +255,14 @@ var actionHandlers = {
   'savePhoto': function() { savePhoto(); },
   'clearPhoto': function() { clearPhoto(); },
   'showComingSoon': function(e, feature) { showComingSoon(feature); },
-  'openAlbum': function() { openAlbum(); },
+  'openAlbum': function() { closeSettingsIfOpen(); openAlbum(); },
   'closeAlbum': function() { closeAlbum(); },
   'deleteAlbumPhoto': function() { deleteAlbumPhoto(); },
   'editPhotoCaption': function() { editPhotoCaption(); },
   'closeViewer': function() {
     closeViewer();
   },
-  'openMemoryPage': function() { openMemoryPage(); },
+  'openMemoryPage': function() { closeSettingsIfOpen(); openMemoryPage(); },
   'closeMemory': function() { closeMemoryPage(); },
   'openMemoryEditor': function(e, param) {
     if (param) { editMemoryById(parseInt(param)); }
@@ -273,7 +278,7 @@ var actionHandlers = {
   'editMemory': function(e, param) {
     if (param) editMemoryById(parseInt(param));
   },
-  'openAchievementPage': function() { openAchievementPage(); },
+  'openAchievementPage': function() { closeSettingsIfOpen(); openAchievementPage(); },
   'closeAchievement': function() { closeAchievementPage(); },
 };
 
