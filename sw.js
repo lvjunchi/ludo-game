@@ -1,5 +1,5 @@
 // 每次发布都递增版本，整套资源在安装完成后一起切换。
-const CACHE_NAME = "ludo-cache-v3";
+const CACHE_NAME = "ludo-cache-v4";
 const STATIC_FILES = [
   "./css/style.css",
   "./js/constants.js",

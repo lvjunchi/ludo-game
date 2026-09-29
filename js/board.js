@@ -48,8 +48,8 @@ function placePieces(gameStateRef) {
   if (gameStateRef.isAnimating) return;
   forEach([1, 2], function(pid) {
     var player = gameStateRef.players[pid];
-    var old = document.querySelector(".piece.p" + pid + ":not(.moving)");
-    if (old) old.remove();
+    // 以状态为唯一来源重绘，清理所有残留（包括旧的移动棋子）。
+    clearPlayerPieces(pid);
     if (player.pos === -1) return;
     var pos = PATH[player.pos];
     var cell = document.getElementById("cell-" + pos[0] + "-" + pos[1]);
@@ -60,6 +60,10 @@ function placePieces(gameStateRef) {
       cell.appendChild(piece);
     }
   });
+}
+
+function clearPlayerPieces(playerId) {
+  document.querySelectorAll('#gameBoard .piece.p' + playerId).forEach(function(piece) { piece.remove(); });
 }
 
 function buildCellPosCache() {

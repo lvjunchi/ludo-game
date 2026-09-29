@@ -48,6 +48,8 @@ function _rollDice(gameState, currentGenRef, onMovePiece) {
   gameState.isTurnBusy = true;
   gameState.isRolling = true;
   var gen = currentGenRef.current;
+  var playerId = gameState.currentPlayer;
+  var turnSerial = gameState.turnSerial;
   var cube = document.getElementById("diceCube");
 
   gameState.diceValue = Math.floor(Math.random() * 6) + 1;
@@ -74,9 +76,9 @@ function _rollDice(gameState, currentGenRef, onMovePiece) {
       vibrate(80);
 
       setTimeout(function() {
-        if (gen !== currentGenRef.current) return;
+        if (gen !== currentGenRef.current || turnSerial !== gameState.turnSerial || playerId !== gameState.currentPlayer) return;
         gameState.isRolling = false;
-        onMovePiece(gameState.currentPlayer);
+        onMovePiece(playerId, turnSerial);
       }, DICE_MOVE_DELAY);
     }
   }, DICE_SPIN_INTERVAL);

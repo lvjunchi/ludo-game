@@ -5,6 +5,7 @@ var celebrationCleanup = null;
 // ============ 移动动画 ============
 
 function animateMove(playerId, fromPos, toPos, gameState, currentGenRef, callback, forward) {
+  if (gameState.isAnimating) return;
   if (forward === undefined) forward = true;
   var gen = currentGenRef.current;
   var player = gameState.players[playerId];
@@ -25,7 +26,7 @@ function animateMove(playerId, fromPos, toPos, gameState, currentGenRef, callbac
     }
   }
 
-  document.querySelectorAll(".piece.p" + playerId + ":not(.moving)").forEach(function(p) { p.remove(); });
+  clearPlayerPieces(playerId);
 
   var movingPiece = document.createElement("div");
   movingPiece.className = "piece p" + playerId + " moving";
@@ -44,8 +45,8 @@ function animateMove(playerId, fromPos, toPos, gameState, currentGenRef, callbac
     if (gen !== currentGenRef.current) { movingPiece.remove(); return; }
     if (stepIndex >= steps.length) {
       gameState.isAnimating = false;
-      placePieces(gameState);
       movingPiece.remove();
+      placePieces(gameState);
       vibrate(20);
       if (callback) callback();
       return;
@@ -66,6 +67,8 @@ function animateMove(playerId, fromPos, toPos, gameState, currentGenRef, callbac
 function movePiece(playerId, gameState, currentGenRef, onNextTurn, onUpdateStats, onResetGame) {
   if (gameState.gameOver) return;
   if (playerId !== gameState.currentPlayer) return;
+  if (!gameState.isTurnBusy || gameState.moveStarted || gameState.isRolling || gameState.isAnimating || gameState.pendingEvent) return;
+  gameState.moveStarted = true;
   var gen = currentGenRef.current;
   var player = gameState.players[playerId];
   var dice = gameState.diceValue;

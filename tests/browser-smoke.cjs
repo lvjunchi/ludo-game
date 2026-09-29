@@ -16,7 +16,7 @@ const server = http.createServer((req, res) => {
   const file = path.resolve(root, '.' + name);
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end(); return; }
   let content = fs.readFileSync(file);
-  if (name === '/sw.js') content = Buffer.from(content.toString().replace('ludo-cache-v3', 'ludo-cache-' + version));
+  if (name === '/sw.js') content = Buffer.from(content.toString().replace(/ludo-cache-v\d+/, 'ludo-cache-' + version));
   if (name === '/sw.js' && legacyWorker) content = Buffer.from("self.addEventListener('install',e=>e.waitUntil(caches.open('ludo-cache-v2').then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));");
   res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
   res.end(content);

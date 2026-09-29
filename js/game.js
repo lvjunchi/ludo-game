@@ -20,6 +20,8 @@ function newGameState() {
     gameOver: false,
     isAnimating: false,
     isTurnBusy: false,
+    moveStarted: false,
+    turnSerial: 0,
     pendingEvent: null,
     players: {
       1: { pos: -1, icon: playerData[1].icon, name: playerData[1].name, startCell: 0, netMove: 0 },
@@ -65,6 +67,8 @@ function updateTurnDisplay() {
 
 function nextTurn() {
   gameState.isTurnBusy = false;
+  gameState.moveStarted = false;
+  gameState.turnSerial++;
   gameState.pendingEvent = null;
   gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
   updateTurnDisplay();
@@ -90,7 +94,8 @@ function updateStats(winnerId) {
 function rollDice() {
   if (document.querySelector('.game-container').style.display === 'none') return;
   if (document.querySelector('.editor-overlay.show')) return;
-  _rollDice(gameState, getCurrentGenRef(), function(playerId) {
+  _rollDice(gameState, getCurrentGenRef(), function(playerId, turnSerial) {
+    if (gameState.turnSerial !== turnSerial) return;
     movePiece(playerId, gameState, getCurrentGenRef(), nextTurn, updateStats, resetGame);
   });
 }
