@@ -19,6 +19,8 @@ function newGameState() {
     isRolling: false,
     gameOver: false,
     isAnimating: false,
+    isTurnBusy: false,
+    pendingEvent: null,
     players: {
       1: { pos: -1, icon: playerData[1].icon, name: playerData[1].name, startCell: 0, netMove: 0 },
       2: { pos: -1, icon: playerData[2].icon, name: playerData[2].name, startCell: 0, netMove: 0 }
@@ -62,6 +64,8 @@ function updateTurnDisplay() {
 }
 
 function nextTurn() {
+  gameState.isTurnBusy = false;
+  gameState.pendingEvent = null;
   gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
   updateTurnDisplay();
   vibrate(15);
@@ -84,6 +88,8 @@ function updateStats(winnerId) {
 
 // ---- 掷骰子包装 ----
 function rollDice() {
+  if (document.querySelector('.game-container').style.display === 'none') return;
+  if (document.querySelector('.editor-overlay.show')) return;
   _rollDice(gameState, getCurrentGenRef(), function(playerId) {
     movePiece(playerId, gameState, getCurrentGenRef(), nextTurn, updateStats, resetGame);
   });
@@ -101,7 +107,7 @@ function handleToggleFirst() {
 
 // ---- 切换主题 ----
 function handleToggleTheme() {
-  if (gameState && gameState.isAnimating) return;
+  if (gameState && gameState.isTurnBusy) { showToast('请先完成当前回合'); return; }
   toggleTheme(function() {
     if (gameState) {
       initBoard(gameState);
@@ -120,6 +126,8 @@ function handleToggleBgAnimation() {
 function handleStartGame() {
   document.getElementById("homePage").style.display = "none";
   document.querySelector(".game-container").style.display = "";
+  recordPlayDay();
+  checkAchievements(null, gameStats).catch(function() {});
   if (!gameInitialized) {
     gameState = newGameState();
     initBoard(gameState);
@@ -130,14 +138,14 @@ function handleStartGame() {
     renderPhotos();
     gameInitialized = true;
   }
+  if (gameState.pendingEvent) showEventTask(gameState.pendingEvent);
 }
 
 // ---- 返回首页 ----
 function handleGoHome() {
-  currentGeneration++;
-  if (gameState) {
-    gameState.isAnimating = false;
-    gameState.isRolling = false;
+  if (gameState && (gameState.isRolling || gameState.isAnimating)) {
+    showToast('棋子移动完成后即可返回首页');
+    return;
   }
   cleanupCelebration();
   var popup = document.querySelector(".popup-overlay");
@@ -175,6 +183,8 @@ function handleResetStats() {
   if (!confirm("确定要重置所有统计数据吗？")) return;
   gameStats = { total: 0, p1Wins: 0, p2Wins: 0 };
   saveStats(gameStats);
+  localStorage.removeItem("ludo_last_winner");
+  localStorage.removeItem("ludo_win_streak");
   document.getElementById("statsContent").textContent = "";
   renderHomePage(playerData, gameStats);
   showMessage("统计数据已重置");
@@ -203,6 +213,7 @@ function handleSaveAnniversary() {
   renderHomePage(playerData, gameStats);
   showToast("纪念日已保存！💕");
   vibrate([30, 50, 30]);
+  checkAchievements(null, gameStats).catch(function() {});
 }
 
 // ---- 照片编辑器代理 ----
@@ -280,6 +291,11 @@ var actionHandlers = {
   },
   'openAchievementPage': function() { closeSettingsIfOpen(); openAchievementPage(); },
   'closeAchievement': function() { closeAchievementPage(); },
+  'openBackup': function() { closeSettingsIfOpen(); openBackup(); },
+  'closeBackup': function() { closeBackup(); },
+  'exportBackup': function() { exportBackup(); },
+  'restoreBackup': function() { restoreBackup(); },
+  'applyUpdate': function() { applyAppUpdate(); },
 };
 
 // ---- 事件绑定 ----
@@ -287,6 +303,8 @@ function bindEventListeners() {
   document.addEventListener('click', function(e) {
     var el = e.target.closest('[data-action]');
     if (!el) return;
+    // 带关闭动作的遮罩层只响应对遮罩本身的点击，避免点击弹窗内容时误关闭。
+    if (el.classList.contains('editor-overlay') && e.target !== el) return;
     var action = el.dataset.action;
     var param = el.dataset.param;
     if (actionHandlers[action]) {
@@ -308,6 +326,10 @@ function bindEventListeners() {
     if (e.target.files[0]) addAlbumPhoto(e.target.files[0]);
     e.target.value = '';
   });
+  document.getElementById('backupFileInput').addEventListener('change', function(e) {
+    previewBackup(e.target.files[0]);
+    e.target.value = '';
+  });
 
   // 键盘快捷键
   document.addEventListener("keydown", function(e) {
@@ -320,7 +342,7 @@ function bindEventListeners() {
     }
     if ((e.key === "r" || e.key === "R") && (e.ctrlKey || e.metaKey)) return;
     if (e.key === "r" || e.key === "R") {
-      if (gameState && !gameState.gameOver && !gameState.isRolling && !gameState.isAnimating) {
+      if (gameState && !gameState.gameOver && !gameState.isTurnBusy) {
         resetGame();
       }
     }

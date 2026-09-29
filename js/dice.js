@@ -44,7 +44,8 @@ function renderDice(value) {
 }
 
 function _rollDice(gameState, currentGenRef, onMovePiece) {
-  if (gameState.isRolling || gameState.gameOver || gameState.isAnimating) return;
+  if (!gameState || gameState.isTurnBusy || gameState.isRolling || gameState.gameOver || gameState.isAnimating) return;
+  gameState.isTurnBusy = true;
   gameState.isRolling = true;
   var gen = currentGenRef.current;
   var cube = document.getElementById("diceCube");
@@ -70,11 +71,11 @@ function _rollDice(gameState, currentGenRef, onMovePiece) {
       cube.style.transition = "transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1)";
       renderDice(gameState.diceValue);
       showMessage("掷出了 " + gameState.diceValue + " 点！");
-      gameState.isRolling = false;
       vibrate(80);
 
       setTimeout(function() {
         if (gen !== currentGenRef.current) return;
+        gameState.isRolling = false;
         onMovePiece(gameState.currentPlayer);
       }, DICE_MOVE_DELAY);
     }

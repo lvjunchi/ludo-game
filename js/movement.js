@@ -12,7 +12,10 @@ function animateMove(playerId, fromPos, toPos, gameState, currentGenRef, callbac
   buildCellPosCache();
 
   var steps = [];
-  if (fromPos !== toPos) {
+  if (fromPos === -1) {
+    // 棋子从棋盘外出发：骰子为 1 时落在第 0 格。
+    for (var firstStep = 0; firstStep <= toPos; firstStep++) steps.push(firstStep);
+  } else if (fromPos !== toPos) {
     var cur = fromPos;
     var safety = TOTAL_CELLS + 1;
     while (cur !== toPos && safety > 0) {
@@ -30,14 +33,15 @@ function animateMove(playerId, fromPos, toPos, gameState, currentGenRef, callbac
   var board = document.querySelector(".game-board");
   board.appendChild(movingPiece);
 
-  var startPos = fromPos === -1 ? toPos : fromPos;
+  var startPos = fromPos === -1 ? 0 : fromPos;
   var s = getCellPos(startPos);
   movingPiece.style.left = s.x + "px";
   movingPiece.style.top = s.y + "px";
+  if (fromPos === -1) movingPiece.style.visibility = "hidden";
 
   var stepIndex = 0;
   function moveStep() {
-    if (gen !== currentGenRef.current) { movingPiece.remove(); gameState.isAnimating = false; return; }
+    if (gen !== currentGenRef.current) { movingPiece.remove(); return; }
     if (stepIndex >= steps.length) {
       gameState.isAnimating = false;
       placePieces(gameState);
@@ -49,6 +53,7 @@ function animateMove(playerId, fromPos, toPos, gameState, currentGenRef, callbac
     var pos = getCellPos(steps[stepIndex]);
     movingPiece.style.left = pos.x + "px";
     movingPiece.style.top = pos.y + "px";
+    movingPiece.style.visibility = "visible";
     stepIndex++;
     setTimeout(moveStep, STEP_DELAY);
   }
@@ -66,11 +71,12 @@ function movePiece(playerId, gameState, currentGenRef, onNextTurn, onUpdateStats
   var dice = gameState.diceValue;
 
   if (player.pos === -1) {
-    var newPos = (player.startCell + dice) % TOTAL_CELLS;
+    // 起点也属于 56 个可落脚格：第一次掷出 1 时落在第 0 格。
+    var newPos = player.startCell + dice - 1;
     player.netMove = dice;
     player.pos = newPos;
     showMessage(player.name + " 掷了 " + dice + "，出发！");
-    animateMove(playerId, player.startCell, newPos, gameState, currentGenRef, function() {
+    animateMove(playerId, -1, newPos, gameState, currentGenRef, function() {
       if (gen !== currentGenRef.current) return;
       afterMove(playerId, newPos, CELL_EVENTS[newPos] || null, gen, gameState, currentGenRef, onNextTurn);
     }, true);
@@ -78,7 +84,7 @@ function movePiece(playerId, gameState, currentGenRef, onNextTurn, onUpdateStats
   }
 
   var oldPos = player.pos;
-  var newPos = (player.pos + dice) % TOTAL_CELLS;
+  var newPos = player.pos + dice;
   player.netMove += dice;
   showMessage(player.name + " 掷了 " + dice);
 
@@ -109,20 +115,51 @@ function afterMove(playerId, pos, eventText, gen, gameState, currentGenRef, onNe
   if (eventText) {
     playSound("event");
     vibrate([30, 50, 30]);
-    showPopup(eventText);
-    var popupBox = document.querySelector(".popup-box");
-    if (popupBox) {
-      popupBox.style.borderColor = playerId === 1 ? "#e53935" : "#42a5f5";
-    }
-    setTimeout(function() {
+    gameState.pendingEvent = { text: eventText, playerId: playerId, finish: function() {
       if (gen !== currentGenRef.current) return;
       placePieces(gameState);
       onNextTurn();
-    }, POPUP_DURATION);
+    } };
+    showEventTask(gameState.pendingEvent);
   } else {
     placePieces(gameState);
     onNextTurn();
   }
+}
+
+function showEventTask(task) {
+  document.querySelector('.popup-overlay')?.remove();
+  var overlay = document.createElement('div');
+  overlay.className = 'popup-overlay task-overlay';
+  var box = document.createElement('div');
+  box.className = 'popup-box';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-label', '情侣互动任务');
+  box.style.borderColor = task.playerId === 1 ? '#e53935' : '#42a5f5';
+  var text = document.createElement('p');
+  text.textContent = task.text;
+  var actions = document.createElement('div');
+  actions.className = 'task-actions';
+  var done = false;
+  ['完成', '跳过', '返回首页'].forEach(function(label, i) {
+    var button = document.createElement('button');
+    button.className = 'editor-btn ' + (i === 0 ? 'save' : 'cancel');
+    button.textContent = label;
+    button.onclick = function() {
+      if (done) return;
+      if (i === 2) { handleGoHome(); return; }
+      done = true;
+      overlay.remove();
+      task.finish();
+    };
+    actions.appendChild(button);
+  });
+  box.appendChild(text);
+  box.appendChild(actions);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  actions.firstChild.focus();
 }
 
 // ============ 胜利庆祝 ============

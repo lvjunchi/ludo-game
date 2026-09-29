@@ -70,6 +70,7 @@ function toggleTheme(onThemeChange) {
   var theme = localStorage.getItem("ludo_theme") || "light";
   var next = theme === "light" ? "dark" : theme === "dark" ? "lumu" : "light";
   applyTheme(next);
+  if (bgAnimOn) { stopBgAnimation(); startBgAnimation(); }
   if (onThemeChange) onThemeChange();
   vibrate(30);
 }
@@ -110,7 +111,16 @@ function startBgAnimation() {
   var container = document.getElementById("bgAnimation");
   container.innerHTML = "";
   container.classList.add("active");
-  var symbols = ["❤️", "💕", "💗", "🌸", "🌺", "💖", "🩷"];
+  var isDark = document.body.classList.contains("dark");
+  var isLumu = document.body.classList.contains("lumu");
+  var symbols;
+  if (isDark) {
+    symbols = ["✨", "⭐", "💫", "🌙", "🌟", "✦", "∘"];
+  } else if (isLumu) {
+    symbols = ["❤️", "💕", "💗", "🌸", "🌺", "💖", "🩷"];
+  } else {
+    symbols = ["🌼", "🦋", "🍃", "🌷", "☀️", "🌸", "🌿", "🌻"];
+  }
   for (var i = 0; i < 22; i++) {
     var el = document.createElement("div");
     el.className = "float-element";

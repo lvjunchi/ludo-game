@@ -212,38 +212,47 @@ function clearPhoto() {
   vibrate(30);
 }
 
-function handlePhotoFile(file) {
-  if (!file || !file.type.startsWith("image/")) return;
-  var reader = new FileReader();
-  reader.onerror = function() { showMessage("图片读取失败"); };
-  reader.onload = function(e) {
-    var img = new Image();
-    img.onerror = function() { showMessage("图片加载失败，可能格式不支持"); };
-    img.onload = function() {
-      var w = img.width, h = img.height;
-      if (w > PHOTO_MAX_SIZE || h > PHOTO_MAX_SIZE) {
-        if (w > h) { h = Math.round(h * PHOTO_MAX_SIZE / w); w = PHOTO_MAX_SIZE; }
-        else { w = Math.round(w * PHOTO_MAX_SIZE / h); h = PHOTO_MAX_SIZE; }
-      }
-      var canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      var dataUrl = canvas.toDataURL("image/jpeg", PHOTO_QUALITY);
-      try {
-        _photos[_currentPhotoPlayer] = dataUrl;
-        localStorage.setItem("ludo_photos", JSON.stringify(_photos));
-      } catch (e) {
-        showMessage("照片太大，存储空间不足，请换一张较小的图片");
-        return;
-      }
-      renderPhotos();
-      document.getElementById("photoEditorOverlay").classList.remove("show");
-      showMessage("照片已保存！");
-      vibrate([30, 50, 30]);
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+async function compressPhoto(file, maxSize) {
+  if (!file || !file.type.startsWith('image/')) throw new Error('请选择图片文件');
+  var source;
+  if (window.createImageBitmap) {
+    try { source = await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (e) {}
+  }
+  if (!source) {
+    source = await new Promise(function(resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('图片加载失败，可能格式不支持')); };
+      img.src = url;
+    });
+  }
+  try {
+    var scale = Math.min(1, maxSize / Math.max(source.width, source.height));
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(source.width * scale));
+    canvas.height = Math.max(1, Math.round(source.height * scale));
+    canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+    var data = canvas.toDataURL('image/webp', PHOTO_QUALITY);
+    return data.startsWith('data:image/webp;') ? data : canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+  } finally { if (source.close) source.close(); }
+}
+
+async function handlePhotoFile(file) {
+  var playerId = _currentPhotoPlayer;
+  var epoch = achievementEpoch;
+  try {
+    var data = await compressPhoto(file, PHOTO_MAX_SIZE);
+    if (epoch !== achievementEpoch) return;
+    var photos = Object.assign({}, _photos);
+    photos[playerId] = data;
+    localStorage.setItem('ludo_photos', JSON.stringify(photos));
+    _photos = photos;
+    renderPhotos();
+    if (_currentPhotoPlayer === playerId) document.getElementById('photoEditorOverlay').classList.remove('show');
+    showToast('头像已保存！');
+    vibrate([30, 50, 30]);
+  } catch (e) { showToast('头像保存失败：' + e.message); }
 }
 
 function renderPhotos() {
@@ -401,37 +410,21 @@ async function addAlbumPhoto(file) {
     return;
   }
   showToast("正在处理图片...");
+  var epoch = achievementEpoch;
 
-  var reader = new FileReader();
-  reader.onerror = function() { showToast("图片读取失败"); };
-  reader.onload = function(e) {
-    var img = new Image();
-    img.onerror = function() { showToast("图片加载失败"); };
-    img.onload = async function() {
-      var w = img.width, h = img.height;
-      if (w > PHOTO_MAX_SIZE || h > PHOTO_MAX_SIZE) {
-        if (w > h) { h = Math.round(h * PHOTO_MAX_SIZE / w); w = PHOTO_MAX_SIZE; }
-        else { w = Math.round(w * PHOTO_MAX_SIZE / h); h = PHOTO_MAX_SIZE; }
-      }
-      var canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      var dataUrl = canvas.toDataURL("image/jpeg", PHOTO_QUALITY);
-
-      try {
-        var today = new Date();
-        var dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
-        await addPhoto({ data: dataUrl, caption: '', date: dateStr });
-        await renderAlbumGrid();
-        showToast("照片已添加 📸");
-        vibrate([30, 50, 30]);
-      } catch (err) {
-        showToast("保存失败，请检查存储空间");
-      }
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  try {
+    var dataUrl = await compressPhoto(file, ALBUM_MAX_SIZE);
+    if (epoch !== achievementEpoch) return;
+    var today = new Date();
+    var dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
+    await addPhoto({ data: dataUrl, caption: '', date: dateStr });
+    await renderAlbumGrid();
+    showToast("照片已添加 📸");
+    vibrate([30, 50, 30]);
+    checkAchievements(null, gameStats).catch(function() {});
+  } catch (err) {
+    showToast('照片保存失败：' + err.message);
+  }
 }
 
 async function deleteAlbumPhoto() {
@@ -541,15 +534,17 @@ async function saveMemoryFromEditor() {
     return;
   }
   try {
-    if (_editingMemoryId) {
+    var isEditing = _editingMemoryId !== null;
+    if (isEditing) {
       await updateMemory(_editingMemoryId, { date: date, title: title, content: content });
     } else {
       await addMemory({ date: date, title: title, content: content });
     }
     closeMemoryEditor();
     await renderMemoryTimeline();
-    showToast(_editingMemoryId ? "回忆已更新 📝" : "回忆已保存 💕");
+    showToast(isEditing ? "回忆已更新 📝" : "回忆已保存 💕");
     vibrate([30, 50, 30]);
+    checkAchievements(null, gameStats).catch(function() {});
   } catch (err) {
     showToast("保存失败");
   }
@@ -591,7 +586,31 @@ var ACHIEVEMENTS = [
   { id: "seven_days", icon: "📅", name: "全勤奖", desc: "连续7天游玩" },
 ];
 
-async function checkAchievements(winnerId, gameStats) {
+function recordPlayDay() {
+  try {
+    var today = new Date();
+    var todayStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+    var playDays = loadPlayDays();
+    if (playDays.indexOf(todayStr) === -1) playDays.push(todayStr);
+    var cutoff = new Date(today.getTime() - 30 * 86400000);
+    playDays = playDays.filter(function(d) { return new Date(d + "T00:00:00") >= cutoff; });
+    savePlayDays(playDays);
+  } catch (e) {}
+}
+
+var achievementChecks = Promise.resolve();
+var achievementEpoch = 0;
+function checkAchievements(winnerId, gameStats) {
+  var stats = Object.assign({}, gameStats);
+  var epoch = achievementEpoch;
+  achievementChecks = achievementChecks.catch(function() {}).then(function() {
+    if (epoch !== achievementEpoch) return [];
+    return evaluateAchievements(winnerId, stats, epoch);
+  });
+  return achievementChecks;
+}
+
+async function evaluateAchievements(winnerId, gameStats, epoch) {
   var data = loadAchievements();
   var newlyUnlocked = [];
   var alreadyUnlocked = new Set(data.unlocked);
@@ -607,15 +626,17 @@ async function checkAchievements(winnerId, gameStats) {
   }
 
   // 3. 十连胜
-  var lastWinner = parseInt(localStorage.getItem("ludo_last_winner") || "0");
   var streak = parseInt(localStorage.getItem("ludo_win_streak") || "0");
-  if (winnerId === lastWinner) {
-    streak++;
-  } else {
-    streak = 1;
-    localStorage.setItem("ludo_last_winner", String(winnerId));
+  if (winnerId === 1 || winnerId === 2) {
+    var lastWinner = parseInt(localStorage.getItem("ludo_last_winner") || "0");
+    if (winnerId === lastWinner) {
+      streak++;
+    } else {
+      streak = 1;
+      localStorage.setItem("ludo_last_winner", String(winnerId));
+    }
+    localStorage.setItem("ludo_win_streak", String(streak));
   }
-  localStorage.setItem("ludo_win_streak", String(streak));
   if (streak >= 10 && !alreadyUnlocked.has("ten_win_streak")) {
     newlyUnlocked.push("ten_win_streak");
   }
@@ -663,14 +684,7 @@ async function checkAchievements(winnerId, gameStats) {
 
   // 10. 全勤奖
   var today = new Date();
-  var todayStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
   var playDays = loadPlayDays();
-  if (playDays.indexOf(todayStr) === -1) {
-    playDays.push(todayStr);
-  }
-  var cutoff = new Date(today.getTime() - 30 * 86400000);
-  playDays = playDays.filter(function(d) { return new Date(d + "T00:00:00") >= cutoff; });
-  savePlayDays(playDays);
   var consecutiveDays = 0;
   for (var ci = 0; ci < 7; ci++) {
     var checkDate = new Date(today.getTime() - ci * 86400000);
@@ -685,11 +699,13 @@ async function checkAchievements(winnerId, gameStats) {
     newlyUnlocked.push("seven_days");
   }
 
+  if (epoch !== achievementEpoch) return [];
   if (newlyUnlocked.length > 0) {
     data.unlocked.push.apply(data.unlocked, newlyUnlocked);
     saveAchievements(data);
     for (var ai = 0; ai < newlyUnlocked.length; ai++) {
       if (ai > 0) await new Promise(function(r) { setTimeout(r, 2500); });
+      if (epoch !== achievementEpoch) return [];
       showAchievementUnlock(newlyUnlocked[ai]);
     }
   }
@@ -717,6 +733,7 @@ function openAchievementPage() {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("achievementPage").style.display = "";
   renderAchievementGrid();
+  checkAchievements(null, gameStats).then(renderAchievementGrid).catch(function() {});
   vibrate(20);
 }
 
@@ -745,5 +762,3 @@ function renderAchievementGrid() {
     grid.appendChild(card);
   });
 }
-
-

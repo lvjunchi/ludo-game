@@ -10,7 +10,8 @@ function loadSavedEvents() {
     var saved = localStorage.getItem("ludo_events");
     if (saved) {
       var arr = JSON.parse(saved);
-      if (arr.length === 56) return arr;
+      // 旧版搞笑/冒险预设曾保存 57 格，保留前 56 格的自定义内容。
+      if (Array.isArray(arr) && (arr.length === 56 || arr.length === 57) && arr.every(function(text) { return typeof text === 'string'; })) return arr.slice(0, 56);
     }
   } catch (e) {}
   return null;

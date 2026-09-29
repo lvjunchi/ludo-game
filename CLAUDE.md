@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `index.html` — 唯一的 HTML 入口，包含棋盘结构、控制区、工具栏及各编辑器弹窗
 - `css/style.css` — 所有样式，通过 CSS 自定义属性实现三主题切换（light/dark/lumu）
-- `sw.js` — Service Worker，缓存策略：HTML 用 network-first，静态资源用 cache-first
+- `sw.js` — Service Worker，HTML 和静态资源按完整缓存版本一起更新（cache-first）
 - `manifest.json` — PWA 清单，支持"添加到主屏幕"
 
 ### JS 模块（按加载顺序）
@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 加载顺序（index.html）
 
 ```
-constants → storage → db → board → events → dice → ui → audio → home → movement → game
+constants → audio → storage → ui → db → events → board → movement → dice → home → backup → game → pwa
 ```
 
 所有模块使用 `var` 声明全局变量/函数，通过 `data-action` 属性绑定事件，由 `game.js` 的 `actionHandlers` 统一调度。
@@ -54,7 +54,7 @@ constants → storage → db → board → events → dice → ui → audio → 
 
 ### 棋盘系统
 
-- 15×15 网格，`PATH` 数组定义 56 格螺旋路径（从 `[14,0]` 逆时针向内）
+- 15×15 网格，`PATH` 数组定义 56 格外围环形路径（从 `[14,0]` 沿四边前进）
 - `PATH_MAP` 提供 `行,列 → 路径索引` 的 O(1) 查找
 - `initBoard()` 创建棋盘，`placePieces()` 放置棋子，`animateMove()` 驱动棋子移动动画
 - 移动动画使用 `setTimeout` 链式推进，`currentGeneration` 计数器确保过期回调失效
@@ -68,6 +68,8 @@ constants → storage → db → board → events → dice → ui → audio → 
   isRolling: false,
   gameOver: false,
   isAnimating: false,
+  isTurnBusy: false,
+  pendingEvent: null,
   players: {
     1: { pos: -1 | 0-55, icon: "🐺", name: "鹿角虫", startCell: 0, netMove: 0 },
     2: { pos: -1 | 0-55, icon: "🐷", name: "小曦曦", startCell: 0, netMove: 0 }
@@ -77,13 +79,13 @@ constants → storage → db → board → events → dice → ui → audio → 
 
 - `pos` — PATH 索引，`-1` 表示未出发
 - `netMove` — 累计净移动步数，`>= 56` 触发胜利（停在索引 55）
-- `isAnimating` 和 `isRolling` 在动画/投掷期间阻止交互
+- `isTurnBusy` 锁住投掷、移动和任务阶段，只有完成/跳过任务后才解锁并换人
 
 ### 游戏流程
 
 1. `rollDice()` → 调用 `dice.js` 的 `_rollDice()` → 3D 立方体旋转 + 嘀嗒音效
 2. `movePiece()` → 移动棋子 → `animateMove()` 逐步推进（每步 350ms）
-3. `afterMove()` → 格子事件弹窗 → `nextTurn()` 切换玩家
+3. `afterMove()` → 格子事件任务 → 点击完成/跳过 → `nextTurn()` 切换玩家
 4. netMove >= 56 → `showWin()` → Canvas 烟花 + 安慰动画 + 更新统计
 
 ### 事件系统
@@ -100,7 +102,8 @@ constants → storage → db → board → events → dice → ui → audio → 
 
 - **localStorage**：格子事件、主题、先手、照片、统计、玩家数据、背景动画开关、纪念日、成就
 - **IndexedDB**：相册照片存储，通过 `db.js` 的 `openDB()` / `addPhoto()` 等操作
-- **Service Worker**：`sw.js` 缓存所有 JS/CSS/HTML，HTML 使用 network-first 策略确保更新及时
+- **Service Worker**：`sw.js` 缓存所有 JS/CSS/HTML，新版本安装完成后由 `pwa.js` 提示更新；每次发布递增 `CACHE_NAME`
+- **备份**：`backup.js` 导出 localStorage 配置与 IndexedDB 照片/回忆；恢复先校验，IndexedDB 两张表同一事务写入，事务失败回滚配置。支持覆盖和去重合并
 
 ### 键盘快捷键
 
@@ -120,8 +123,9 @@ constants → storage → db → board → events → dice → ui → audio → 
 ### 已知设计细节
 
 - 格子 0（起点）同时是玩家 1 和 2 的起点：`startCell: 0`
-- 出发时 `netMove = dice`，`pos = startCell + dice`
-- 事件弹窗点击可提前关闭，3 秒后自动关闭，边框颜色跟随当前玩家（红/蓝）
+- 出发时 `netMove = dice`，`pos = startCell + dice - 1`（掷出 1 落在第 0 格）
+- 事件任务保留到点击完成/跳过，返回首页保留任务，重进游戏恢复；投掷/移动中返回首页会提示等待
+- 新照片最长边 1600px，头像 320px，优先 WebP；旧照片原样保留
 - Canvas 庆祝特效持续 7 秒：彩带 + 烟花 + 闪烁星星 + 输家安慰 emoji 从底部升起
 - 先手切换会调用 `resetGame()`
 - 3D 骰子使用纯 JS 控制旋转（每 85ms 随机旋转），通过 CSS transition 平稳停靠

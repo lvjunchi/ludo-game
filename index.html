@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#c2185b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
   <div class="bg-animation" id="bgAnimation"></div>
@@ -191,6 +191,10 @@
           <span class="settings-label">📊 游戏统计</span>
           <button class="editor-btn save" data-action="openStats">查看</button>
         </div>
+        <div class="settings-section">
+          <span class="settings-label">💾 备份与恢复</span>
+          <button class="editor-btn save" data-action="openBackup">管理</button>
+        </div>
       </div>
       <div class="editor-actions">
         <button class="editor-btn cancel" data-action="closeSettings">关闭</button>
@@ -283,6 +287,34 @@
     </div>
   </div>
 
+  <div class="editor-overlay" id="backupOverlay" data-action="closeBackup">
+    <div class="editor-box">
+      <h2>💾 备份与恢复</h2>
+      <div class="backup-content">
+        <p>包含玩家、设置、统计、成就、相册和回忆。备份文件仅保存在你选择的位置。</p>
+        <p id="backupLastTime"></p>
+        <button class="editor-btn save" data-action="exportBackup">导出完整备份</button>
+        <label for="backupFileInput">选择要恢复的备份文件</label>
+        <input type="file" id="backupFileInput" accept=".json,application/json">
+        <p id="backupPreview" aria-live="polite"></p>
+        <label for="backupMode">恢复方式</label>
+        <select id="backupMode" class="photo-url-input">
+          <option value="merge">合并：保留当前设置，补充照片与回忆</option>
+          <option value="replace">覆盖：替换当前所有数据</option>
+        </select>
+        <p>合并时重复内容不会再次添加，胜场取两份数据的较高值。未结束的对局不在备份范围内。覆盖前请先导出当前备份。</p>
+      </div>
+      <div class="editor-actions">
+        <button class="editor-btn save" id="restoreBackupBtn" data-action="restoreBackup" disabled>恢复备份</button>
+        <button class="editor-btn cancel" data-action="closeBackup">关闭</button>
+      </div>
+    </div>
+  </div>
+  <div id="appUpdateBanner" class="update-banner" hidden>
+    <span>新版本已准备好，更新后继续使用。</span>
+    <button class="editor-btn save" data-action="applyUpdate">更新</button>
+  </div>
+
   <script src="js/constants.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/storage.js"></script>
@@ -293,11 +325,8 @@
   <script src="js/movement.js"></script>
   <script src="js/dice.js"></script>
   <script src="js/home.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/game.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  </script>
+  <script src="js/pwa.js"></script>
 </body>
 </html>

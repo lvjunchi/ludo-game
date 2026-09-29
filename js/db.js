@@ -6,6 +6,45 @@ var STORE_NAME = 'photos';
 var MEMORY_STORE = 'memories';
 var _db = null;
 
+// 备份从同一事务读取两张表，恢复也在同一事务提交。
+async function readBackupRecords() {
+  var db = await openDB();
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction([STORE_NAME, MEMORY_STORE], 'readonly');
+    var photos = tx.objectStore(STORE_NAME).getAll();
+    var memories = tx.objectStore(MEMORY_STORE).getAll();
+    tx.oncomplete = function() { resolve({ photos: photos.result, memories: memories.result }); };
+    tx.onabort = tx.onerror = function() { reject(tx.error || new Error('读取失败')); };
+  });
+}
+
+async function writeBackupRecords(records, settings) {
+  var db = await openDB();
+  var before = {};
+  BACKUP_KEYS.forEach(function(key) { before[key] = localStorage.getItem(key); });
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction([STORE_NAME, MEMORY_STORE], 'readwrite');
+    var failure = null;
+    tx.oncomplete = function() { resolve(); };
+    tx.onabort = function() {
+      try { applyBackupSettings(before); } catch (e) { failure = new Error('恢复失败，请保留备份文件并检查存储空间'); }
+      reject(failure || tx.error || new Error('恢复失败，原数据已保留'));
+    };
+    try {
+      var photos = tx.objectStore(STORE_NAME);
+      var memories = tx.objectStore(MEMORY_STORE);
+      photos.clear();
+      memories.clear();
+      records.photos.forEach(function(photo) { photos.put(photo); });
+      records.memories.forEach(function(memory) { memories.put(memory); });
+      applyBackupSettings(settings);
+    } catch (e) {
+      failure = e;
+      tx.abort();
+    }
+  });
+}
+
 function openDB() {
   if (_db) return Promise.resolve(_db);
   return new Promise(function(resolve, reject) {
@@ -52,8 +91,8 @@ async function addPhoto(photo) {
       createdAt: Date.now()
     };
     var request = store.add(record);
-    request.onsuccess = function() { resolve(request.result); };
-    request.onerror = function() { reject(request.error); };
+    tx.oncomplete = function() { resolve(request.result); };
+    tx.onabort = function() { reject(tx.error || new Error('保存失败')); };
   });
 }
 
@@ -63,8 +102,8 @@ async function deletePhoto(id) {
     var tx = db.transaction(STORE_NAME, 'readwrite');
     var store = tx.objectStore(STORE_NAME);
     var request = store.delete(id);
-    request.onsuccess = function() { resolve(); };
-    request.onerror = function() { reject(request.error); };
+    tx.oncomplete = function() { resolve(); };
+    tx.onabort = function() { reject(tx.error || new Error('删除失败')); };
   });
 }
 
@@ -74,13 +113,13 @@ async function updatePhoto(id, updates) {
     var tx = db.transaction(STORE_NAME, 'readwrite');
     var store = tx.objectStore(STORE_NAME);
     var getReq = store.get(id);
+    tx.oncomplete = function() { resolve(); };
+    tx.onabort = function() { reject(tx.error || new Error('更新失败')); };
     getReq.onsuccess = function() {
       var photo = getReq.result;
-      if (!photo) { reject(new Error('照片不存在')); return; }
+      if (!photo) { tx.abort(); return; }
       Object.assign(photo, updates);
       var putReq = store.put(photo);
-      putReq.onsuccess = function() { resolve(); };
-      putReq.onerror = function() { reject(putReq.error); };
     };
     getReq.onerror = function() { reject(getReq.error); };
   });
@@ -116,8 +155,8 @@ async function addMemory(memory) {
       createdAt: Date.now()
     };
     var request = store.add(record);
-    request.onsuccess = function() { resolve(request.result); };
-    request.onerror = function() { reject(request.error); };
+    tx.oncomplete = function() { resolve(request.result); };
+    tx.onabort = function() { reject(tx.error || new Error('保存失败')); };
   });
 }
 
@@ -127,13 +166,13 @@ async function updateMemory(id, updates) {
     var tx = db.transaction(MEMORY_STORE, 'readwrite');
     var store = tx.objectStore(MEMORY_STORE);
     var getReq = store.get(id);
+    tx.oncomplete = function() { resolve(); };
+    tx.onabort = function() { reject(tx.error || new Error('更新失败')); };
     getReq.onsuccess = function() {
       var memory = getReq.result;
-      if (!memory) { reject(new Error('回忆不存在')); return; }
+      if (!memory) { tx.abort(); return; }
       Object.assign(memory, updates);
       var putReq = store.put(memory);
-      putReq.onsuccess = function() { resolve(); };
-      putReq.onerror = function() { reject(putReq.error); };
     };
     getReq.onerror = function() { reject(getReq.error); };
   });
@@ -145,7 +184,7 @@ async function deleteMemory(id) {
     var tx = db.transaction(MEMORY_STORE, 'readwrite');
     var store = tx.objectStore(MEMORY_STORE);
     var request = store.delete(id);
-    request.onsuccess = function() { resolve(); };
-    request.onerror = function() { reject(request.error); };
+    tx.oncomplete = function() { resolve(); };
+    tx.onabort = function() { reject(tx.error || new Error('删除失败')); };
   });
 }
